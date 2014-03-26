@@ -1,0 +1,40 @@
+#!/bin/sh
+
+# PROVIDE: varball
+# REQUIRE: var
+# BEFORE: cleanvar
+# KEYWORD: shutdown
+
+. /etc/rc.subr
+
+name="varball"
+rcvar="varball_enable"
+start_cmd="varball_start"
+stop_cmd="varball_stop"
+
+load_rc_config ${name}
+
+varball_file=${varball_file:-/var.tar}
+varball_dir=${varball_dir:-/var}
+
+varball_start() {
+    if [ -f "${varball_file}" ]; then
+        echo -n "${name}: Extracting ${varball_file} to ${varball_dir}:"
+        tar -C ${varball_dir} -xpf ${varball_file} 2> /dev/null
+        echo " done."
+    else
+        echo "${name}: Skipping extraction, ${varball_file} does not exist."
+    fi
+}
+
+varball_stop() {
+    echo -n "${name}: Archiving ${varball_dir} in ${varball_file}:"
+    rm -f ${varball_file} 2> /dev/null
+    oldumask=$(umask)
+    umask 077
+    tar -C ${varball_dir} -cpf ${varball_file} . 2> /dev/null
+    umask ${oldumask}
+    echo " done."
+}
+
+run_rc_command "$1"
